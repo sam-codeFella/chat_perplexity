@@ -2,8 +2,6 @@
 
 import { z } from 'zod';
 
-import { createUser, getUser } from '@/lib/db/queries';
-
 import { signIn } from './auth';
 
 const authFormSchema = z.object({
@@ -27,6 +25,7 @@ export const login = async (
 
     await signIn('credentials', {
       email: validatedData.email,
+      username: validatedData.email.split('@')[0],
       password: validatedData.password,
       redirect: false,
     });
@@ -36,7 +35,6 @@ export const login = async (
     if (error instanceof z.ZodError) {
       return { status: 'invalid_data' };
     }
-
     return { status: 'failed' };
   }
 };
@@ -50,7 +48,7 @@ export interface RegisterActionState {
     | 'user_exists'
     | 'invalid_data';
 }
-
+// Register function is so tough to integrate man.
 export const register = async (
   _: RegisterActionState,
   formData: FormData,
@@ -61,24 +59,45 @@ export const register = async (
       password: formData.get('password'),
     });
 
-    const [user] = await getUser(validatedData.email);
-
-    if (user) {
-      return { status: 'user_exists' } as RegisterActionState;
-    }
-    await createUser(validatedData.email, validatedData.password);
-    await signIn('credentials', {
-      email: validatedData.email,
-      password: validatedData.password,
-      redirect: false,
+    const response = await fetch('http://localhost:8000/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: validatedData.email,
+        username: validatedData.email.split('@')[0],
+        password: validatedData.password,
+      }),
     });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      if (response.status === 409) {
+        return { status: 'user_exists' };
+      }
+      return { status: 'failed' };
+    }
+    console.log("yahoooooooo");
+
+    // Store the token in a secure way (you might want to use a more secure method)
+    if (data.token) {
+      console.log("shammii is herere....");
+      // You can store the token in an HTTP-only cookie or secure storage
+      // For now, we'll just proceed with sign in
+      await signIn('credentials', {
+        email: validatedData.email,
+        password: validatedData.password,
+        redirect: false,
+      });
+    }
 
     return { status: 'success' };
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { status: 'invalid_data' };
     }
-
     return { status: 'failed' };
   }
 };

@@ -28,11 +28,20 @@ import { generateUUID } from '../utils';
 const client = postgres(process.env.POSTGRES_URL!);
 const drizzleDb = drizzle(client);
 
+//now over here we need to call the db to find if the user exists.
 export async function getUser(email: string): Promise<Array<User>> {
   try {
-    return await drizzleDb.select().from(user).where(eq(user.email, email));
+    const encodedEmail = encodeURIComponent(email);
+    const response = await fetch(`http://localhost:8000/auth/user?email=${encodedEmail}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return [data]; // Wrapping in array to maintain compatibility with existing return type
   } catch (error) {
-    console.error('Failed to get user from database:', error);
+    console.error('Failed to get user from authentication service:', error);
     throw error;
   }
 }

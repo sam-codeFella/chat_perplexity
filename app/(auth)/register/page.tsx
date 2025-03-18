@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+
+//below are all hooks. -> What are hooks ?
 import { useActionState, useEffect, useState } from 'react';
 
 import { AuthForm } from '@/components/auth-form';
@@ -46,6 +48,7 @@ export default function Page() {
     formAction(formData);
   };
 
+  // These returns encapsulate the whole experience.  -> Typescripts combines react elements & css.
   return (
     <div className="flex h-dvh w-screen items-start pt-12 md:pt-0 md:items-center justify-center bg-background">
       <div className="w-full max-w-md overflow-hidden rounded-2xl gap-12 flex flex-col">
