@@ -1,5 +1,6 @@
 import { auth } from '@/app/(auth)/auth';
 import { getChatById, getVotesByChatId, voteMessage } from '@/lib/db/queries';
+import { Vote } from '@/lib/types';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -30,39 +31,38 @@ export async function GET(request: Request) {
   return Response.json(votes, { status: 200 });
 }
 
-export async function PATCH(request: Request) {
-  const {
-    chatId,
-    messageId,
-    type,
-  }: { chatId: string; messageId: string; type: 'up' | 'down' } =
-    await request.json();
+export async function POST(request: Request) {
+  try {
+    const { chatId, messageId, type }: Vote = await request.json();
 
-  if (!chatId || !messageId || !type) {
-    return new Response('messageId and type are required', { status: 400 });
+    if (!chatId || !messageId || !type) {
+      return new Response('chatId, messageId and type are required', { status: 400 });
+    }
+
+    const session = await auth();
+
+    if (!session || !session.user || !session.user.email) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+
+    const chat = await getChatById({ id: chatId });
+
+    if (!chat) {
+      return new Response('Chat not found', { status: 404 });
+    }
+
+    if (chat.userId !== session.user.id) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+
+    const vote = await voteMessage({ chatId, messageId, type });
+
+    return Response.json(vote, { status: 200 });
+  } catch (error) {
+    console.error('Error voting:', error);
+    return new Response('Internal Server Error', { status: 500 });
   }
-
-  const session = await auth();
-
-  if (!session || !session.user || !session.user.email) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-
-  const chat = await getChatById({ id: chatId });
-
-  if (!chat) {
-    return new Response('Chat not found', { status: 404 });
-  }
-
-  if (chat.userId !== session.user.id) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-
-  await voteMessage({
-    chatId,
-    messageId,
-    type: type,
-  });
-
-  return new Response('Message voted', { status: 200 });
 }
+
+// Alias PATCH to POST for backward compatibility
+export const PATCH = POST;

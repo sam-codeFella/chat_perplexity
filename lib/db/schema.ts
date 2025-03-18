@@ -10,6 +10,7 @@ import {
   foreignKey,
   boolean,
 } from 'drizzle-orm/pg-core';
+import { sql } from '@vercel/postgres';
 
 export const user = pgTable('User', {
   id: uuid('id').primaryKey().notNull().defaultRandom(),
@@ -19,49 +20,41 @@ export const user = pgTable('User', {
 
 export type User = InferSelectModel<typeof user>;
 
-export const chat = pgTable('Chat', {
-  id: uuid('id').primaryKey().notNull().defaultRandom(),
-  createdAt: timestamp('createdAt').notNull(),
+export const chat = pgTable('chats', {
+  id: varchar('id').primaryKey(),
+  userId: varchar('user_id').notNull(),
   title: text('title').notNull(),
-  userId: uuid('userId')
-    .notNull()
-    .references(() => user.id),
-  visibility: varchar('visibility', { enum: ['public', 'private'] })
+  createdAt: timestamp('created_at').defaultNow(),
+  visibility: varchar('visibility', { enum: ['private', 'public'] })
     .notNull()
     .default('private'),
 });
 
 export type Chat = InferSelectModel<typeof chat>;
 
-export const message = pgTable('Message', {
-  id: uuid('id').primaryKey().notNull().defaultRandom(),
-  chatId: uuid('chatId')
+export const message = pgTable('messages', {
+  id: varchar('id').primaryKey(),
+  chatId: varchar('chat_id')
     .notNull()
-    .references(() => chat.id),
-  role: varchar('role').notNull(),
-  content: json('content').notNull(),
-  createdAt: timestamp('createdAt').notNull(),
+    .references(() => chat.id, { onDelete: 'cascade' }),
+  content: text('content').notNull(),
+  role: varchar('role', { enum: ['user', 'assistant'] }).notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 export type Message = InferSelectModel<typeof message>;
 
-export const vote = pgTable(
-  'Vote',
-  {
-    chatId: uuid('chatId')
-      .notNull()
-      .references(() => chat.id),
-    messageId: uuid('messageId')
-      .notNull()
-      .references(() => message.id),
-    isUpvoted: boolean('isUpvoted').notNull(),
-  },
-  (table) => {
-    return {
-      pk: primaryKey({ columns: [table.chatId, table.messageId] }),
-    };
-  },
-);
+export const vote = pgTable('votes', {
+  id: varchar('id').primaryKey(),
+  chatId: varchar('chat_id')
+    .notNull()
+    .references(() => chat.id, { onDelete: 'cascade' }),
+  messageId: varchar('message_id')
+    .notNull()
+    .references(() => message.id, { onDelete: 'cascade' }),
+  type: varchar('type', { enum: ['up', 'down'] }).notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
 
 export type Vote = InferSelectModel<typeof vote>;
 

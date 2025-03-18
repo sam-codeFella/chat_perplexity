@@ -18,6 +18,14 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MessageEditor } from './message-editor';
 import { DocumentPreview } from './document-preview';
 import { MessageReasoning } from './message-reasoning';
+import { WebSearch } from './web-search';
+import { ExternalLinkIcon } from './icons';
+import ReactMarkdown from 'react-markdown';
+import type { Message as CustomMessage } from '@/lib/types';
+import type { Citation, WebSearchResult } from '@/lib/types';
+import { ComponentProps } from 'react';
+import { voteMessage } from '@/lib/actions';
+import { ThumbUpIcon, ThumbDownIcon } from './icons';
 
 const PurePreviewMessage = ({
   chatId,
@@ -68,149 +76,157 @@ const PurePreviewMessage = ({
             </div>
           )}
 
-          <div className="flex flex-col gap-4 w-full">
-            {message.experimental_attachments && (
+          <div className="flex flex-col gap-2 w-full min-w-0">
+            {mode === 'edit' ? (
+              <MessageEditor
+                message={message}
+                setMode={setMode}
+                setMessages={setMessages}
+                reload={reload}
+              />
+            ) : (
+              <>
+                {message.role === 'assistant' && message.webSearchResults && (
+                  <WebSearch results={message.webSearchResults} />
+                )}
+                <div
+                  className={cn(
+                    'prose break-words dark:prose-invert prose-p:leading-relaxed prose-pre:p-0 w-full',
+                    {
+                      'max-w-none': message.role === 'assistant',
+                    },
+                  )}
+                  data-testid="message-content"
+                >
+                  <ReactMarkdown
+                    components={{
+                      p: ({ children }) => <p>{children}</p>,
+                      a: ({ href, children }) => (
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          {children}
+                        </a>
+                      ),
+                      pre: ({ children }) => (
+                        <div className="relative">
+                          <pre className="bg-muted/50 rounded-lg p-4 overflow-x-auto">
+                            {children}
+                          </pre>
+                        </div>
+                      ),
+                      code: ({
+                        inline,
+                        className,
+                        children,
+                        ...props
+                      }: ComponentProps<'code'> & { inline?: boolean }) => {
+                        if (inline) {
+                          return (
+                            <code className="bg-muted px-1 rounded" {...props}>
+                              {children}
+                            </code>
+                          );
+                        }
+                        const match = /language-(\w+)/.exec(className || '');
+                        const lang = match ? match[1] : '';
+                        return (
+                          <div className="relative">
+                            {lang && (
+                              <div className="absolute right-2 top-2 text-xs text-muted-foreground">
+                                {lang}
+                              </div>
+                            )}
+                            <code className={className} {...props}>
+                              {children}
+                            </code>
+                          </div>
+                        );
+                      },
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
+                </div>
+
+                {message.role === 'assistant' && message.citations && (
+                  <div className="mt-4 flex flex-col gap-2">
+                    <div className="text-sm font-medium text-muted-foreground">Citations</div>
+                    <div className="flex flex-wrap gap-2">
+                      {message.citations.map((citation: Citation, index: number) => (
+                        <a
+                          key={index}
+                          href={citation.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary hover:underline flex items-center gap-1 bg-muted/50 px-2 py-1 rounded"
+                        >
+                          {citation.title}
+                          <ExternalLinkIcon className="h-3 w-3" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {message.attachments && message.attachments.length > 0 && (
               <div
-                data-testid={`message-attachments`}
-                className="flex flex-row justify-end gap-2"
+                className="flex flex-wrap gap-2 mt-2"
+                data-testid="message-attachments"
               >
-                {message.experimental_attachments.map((attachment) => (
+                {message.attachments.map((attachment: { name: string; url: string; contentType: string }) => (
                   <PreviewAttachment
-                    key={attachment.url}
+                    key={attachment.name}
                     attachment={attachment}
                   />
                 ))}
               </div>
             )}
 
-            {message.reasoning && (
-              <MessageReasoning
-                isLoading={isLoading}
-                reasoning={message.reasoning}
-              />
-            )}
-
-            {(message.content || message.reasoning) && mode === 'view' && (
-              <div
-                data-testid="message-content"
-                className="flex flex-row gap-2 items-start"
-              >
-                {message.role === 'user' && !isReadonly && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        data-testid={`message-edit`}
-                        variant="ghost"
-                        className="px-2 h-fit rounded-full text-muted-foreground opacity-0 group-hover/message:opacity-100"
-                        onClick={() => {
-                          setMode('edit');
-                        }}
-                      >
-                        <PencilEditIcon />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Edit message</TooltipContent>
-                  </Tooltip>
-                )}
-
-                <div
-                  className={cn('flex flex-col gap-4', {
-                    'bg-primary text-primary-foreground px-3 py-2 rounded-xl':
-                      message.role === 'user',
+            {message.role === 'assistant' && !isReadonly && (
+              <div className="flex items-center gap-2 mt-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    if (vote?.type === 'up') return;
+                    voteMessage({
+                      chatId,
+                      messageId: message.id,
+                      type: 'up',
+                    });
+                  }}
+                  data-testid="message-upvote"
+                  className={cn('text-muted-foreground hover:text-foreground', {
+                    'text-foreground': vote?.type === 'up',
                   })}
                 >
-                  <Markdown>{message.content as string}</Markdown>
-                </div>
+                  <ThumbUpIcon size={14} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    if (vote?.type === 'down') return;
+                    voteMessage({
+                      chatId,
+                      messageId: message.id,
+                      type: 'down',
+                    });
+                  }}
+                  data-testid="message-downvote"
+                  className={cn('text-muted-foreground hover:text-foreground', {
+                    'text-foreground': vote?.type === 'down',
+                  })}
+                >
+                  <ThumbDownIcon size={14} />
+                </Button>
               </div>
-            )}
-
-            {message.content && mode === 'edit' && (
-              <div className="flex flex-row gap-2 items-start">
-                <div className="size-8" />
-
-                <MessageEditor
-                  key={message.id}
-                  message={message}
-                  setMode={setMode}
-                  setMessages={setMessages}
-                  reload={reload}
-                />
-              </div>
-            )}
-
-            {message.toolInvocations && message.toolInvocations.length > 0 && (
-              <div className="flex flex-col gap-4">
-                {message.toolInvocations.map((toolInvocation) => {
-                  const { toolName, toolCallId, state, args } = toolInvocation;
-
-                  if (state === 'result') {
-                    const { result } = toolInvocation;
-
-                    return (
-                      <div key={toolCallId}>
-                        {toolName === 'getWeather' ? (
-                          <Weather weatherAtLocation={result} />
-                        ) : toolName === 'createDocument' ? (
-                          <DocumentPreview
-                            isReadonly={isReadonly}
-                            result={result}
-                          />
-                        ) : toolName === 'updateDocument' ? (
-                          <DocumentToolResult
-                            type="update"
-                            result={result}
-                            isReadonly={isReadonly}
-                          />
-                        ) : toolName === 'requestSuggestions' ? (
-                          <DocumentToolResult
-                            type="request-suggestions"
-                            result={result}
-                            isReadonly={isReadonly}
-                          />
-                        ) : (
-                          <pre>{JSON.stringify(result, null, 2)}</pre>
-                        )}
-                      </div>
-                    );
-                  }
-                  return (
-                    <div
-                      key={toolCallId}
-                      className={cx({
-                        skeleton: ['getWeather'].includes(toolName),
-                      })}
-                    >
-                      {toolName === 'getWeather' ? (
-                        <Weather />
-                      ) : toolName === 'createDocument' ? (
-                        <DocumentPreview isReadonly={isReadonly} args={args} />
-                      ) : toolName === 'updateDocument' ? (
-                        <DocumentToolCall
-                          type="update"
-                          args={args}
-                          isReadonly={isReadonly}
-                        />
-                      ) : toolName === 'requestSuggestions' ? (
-                        <DocumentToolCall
-                          type="request-suggestions"
-                          args={args}
-                          isReadonly={isReadonly}
-                        />
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {!isReadonly && (
-              <MessageActions
-                key={`action-${message.id}`}
-                chatId={chatId}
-                message={message}
-                vote={vote}
-                isLoading={isLoading}
-              />
             )}
           </div>
         </div>
