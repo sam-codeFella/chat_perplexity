@@ -23,6 +23,24 @@ export const login = async (
       password: formData.get('password'),
     });
 
+    const response = await fetch('http://localhost:8000/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: validatedData.email,
+        password: validatedData.password,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return { status: 'failed' };
+    }
+
+    // If login API call is successful, proceed with signIn
     await signIn('credentials', {
       email: validatedData.email,
       username: validatedData.email.split('@')[0],
@@ -48,7 +66,7 @@ export interface RegisterActionState {
     | 'user_exists'
     | 'invalid_data';
 }
-// Register function is so tough to integrate man.
+
 export const register = async (
   _: RegisterActionState,
   formData: FormData,
@@ -83,7 +101,6 @@ export const register = async (
 
     // Store the token in a secure way (you might want to use a more secure method)
     if (data.token) {
-      console.log("shammii is herere....");
       // You can store the token in an HTTP-only cookie or secure storage
       // For now, we'll just proceed with sign in
       await signIn('credentials', {

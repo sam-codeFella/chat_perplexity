@@ -10,6 +10,15 @@ interface ExtendedSession extends Session {
   user: User;
 }
 
+//okay this is well understood now. 
+/*
+Credentials Provider
+The Credentials provider handles username/password authentication:
+Callbacks
+Two callback functions are defined:
+JWT Callback: Runs when a JWT is created/updated -> why are these callbacks needed? 
+Session Callback: Runs when a session is created/updated -> why are these callbacks needed?   
+*/
 export const {
   handlers: { GET, POST },
   auth,
@@ -20,6 +29,7 @@ export const {
   providers: [
     Credentials({
       credentials: {},
+      //the authorise function is now working. 
       async authorize({ email, password }: any) {
         const users = await getUser(email);
         if (users.length === 0) return null;
@@ -48,7 +58,6 @@ export const {
       if (session.user) {
         session.user.id = token.id as string;
       }
-
       return session;
     },
   },
