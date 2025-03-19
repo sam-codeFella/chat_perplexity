@@ -45,6 +45,7 @@ export const login = async (
       email: validatedData.email,
       username: validatedData.email.split('@')[0],
       password: validatedData.password,
+      token: data.token,
       redirect: false,
     });
 

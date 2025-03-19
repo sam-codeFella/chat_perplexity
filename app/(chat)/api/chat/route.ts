@@ -9,15 +9,11 @@ import { systemPrompt } from '@/lib/ai/prompts';
 import {
   deleteChatById,
   getChatById,
-  saveChat,
-  saveMessages,
 } from '@/lib/db/queries';
 import {
-  generateUUID,
   getMostRecentUserMessage,
   sanitizeResponseMessages,
 } from '@/lib/utils';
-import { generateTitleFromUserMessage } from '../../actions';
 import { createDocument } from '@/lib/ai/tools/create-document';
 import { updateDocument } from '@/lib/ai/tools/update-document';
 import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
@@ -25,50 +21,54 @@ import { getWeather } from '@/lib/ai/tools/get-weather';
 import { isProductionEnvironment } from '@/lib/constants';
 import { NextResponse } from 'next/server';
 import { myProvider } from '@/lib/ai/providers';
+import { Session } from 'next-auth';
+
+interface ExtendedSession extends Session {
+  user: {
+    id: string;
+    token: string;
+  } & Session['user'];
+}
 
 export const maxDuration = 60;
 
 export async function POST(request: Request) {
   try {
     const {
-      id,
       messages,
       selectedChatModel,
     }: {
-      id: string;
       messages: Array<Message>;
       selectedChatModel: string;
     } = await request.json();
 
-    const session = await auth();
-
-    if (!session || !session.user || !session.user.id) {
+    const session = (await auth()) as ExtendedSession | null;
+    if (!session?.user?.id || !session.user.token) {
       return new Response('Unauthorized', { status: 401 });
     }
 
     const userMessage = getMostRecentUserMessage(messages);
-
     if (!userMessage) {
       return new Response('No user message found', { status: 400 });
     }
 
-    const chat = await getChatById({ id });
+    // Call the external chat API
+    const response = await fetch('http://localhost:8000/chats', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.user.token}`,
+      },
+      body: JSON.stringify({
+        content: userMessage.content
+      })
+    });
 
-    if (!chat) {
-      const title = await generateTitleFromUserMessage({
-        message: userMessage,
-      });
-
-      await saveChat({ id, userId: session.user.id, title });
-    } else {
-      if (chat.userId !== session.user.id) {
-        return new Response('Unauthorized', { status: 401 });
-      }
+    if (!response.ok) {
+      return new Response('Failed to create chat', { status: response.status });
     }
 
-    await saveMessages({
-      messages: [{ ...userMessage, createdAt: new Date(), chatId: id }],
-    });
+    const chatData = await response.json();
 
     return createDataStreamResponse({
       execute: (dataStream) => {
@@ -87,7 +87,6 @@ export async function POST(request: Request) {
                   'requestSuggestions',
                 ],
           experimental_transform: smoothStream({ chunking: 'word' }),
-          experimental_generateMessageId: generateUUID,
           tools: {
             getWeather,
             createDocument: createDocument({ session, dataStream }),
@@ -98,28 +97,7 @@ export async function POST(request: Request) {
             }),
           },
           onFinish: async ({ response, reasoning }) => {
-            if (session.user?.id) {
-              try {
-                const sanitizedResponseMessages = sanitizeResponseMessages({
-                  messages: response.messages,
-                  reasoning,
-                });
-
-                await saveMessages({
-                  messages: sanitizedResponseMessages.map((message) => {
-                    return {
-                      id: message.id,
-                      chatId: id,
-                      role: message.role,
-                      content: message.content,
-                      createdAt: new Date(),
-                    };
-                  }),
-                });
-              } catch (error) {
-                console.error('Failed to save chat');
-              }
-            }
+            // Message saving is now handled by the API
           },
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,
@@ -134,7 +112,7 @@ export async function POST(request: Request) {
         });
       },
       onError: () => {
-        return 'Oops, an error occured!';
+        return 'Oops, an error occurred!';
       },
     });
   } catch (error) {

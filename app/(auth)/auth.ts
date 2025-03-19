@@ -7,7 +7,9 @@ import { getUser } from '@/lib/db/queries';
 import { authConfig } from './auth.config';
 
 interface ExtendedSession extends Session {
-  user: User;
+  user: User & {
+    token?: string;
+  };
 }
 
 //okay this is well understood now. 
@@ -28,15 +30,17 @@ export const {
   ...authConfig,
   providers: [
     Credentials({
-      credentials: {},
-      //the authorise function is now working. 
-      async authorize({ email, password }: any) {
+      credentials: {
+        email: { type: 'email' },
+        password: { type: 'password' },
+        token: { type: 'text' }, // Add token to credentials
+      },
+      async authorize({ email, password, token }: any) {
         const users = await getUser(email);
         if (users.length === 0) return null;
-        // biome-ignore lint: Forbidden non-null assertion.
         const passwordsMatch = await compare(password, users[0].password!);
         if (!passwordsMatch) return null;
-        return users[0] as any;
+        return { ...users[0], token } as any; // Include token in user object
       },
     }),
   ],
@@ -44,8 +48,8 @@ export const {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.token = user.token; // Store token in JWT
       }
-
       return token;
     },
     async session({
@@ -57,6 +61,7 @@ export const {
     }) {
       if (session.user) {
         session.user.id = token.id as string;
+        session.user.token = token.token as string; // Add token to session
       }
       return session;
     },
