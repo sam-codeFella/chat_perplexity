@@ -68,6 +68,8 @@ export interface RegisterActionState {
     | 'invalid_data';
 }
 
+//what is the matter with tokens here ?
+//What is the architecture we have and what more am i supposed to add ?
 export const register = async (
   _: RegisterActionState,
   formData: FormData,

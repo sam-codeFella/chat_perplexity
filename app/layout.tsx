@@ -1,4 +1,7 @@
 import type { Metadata } from 'next';
+
+//What's sonner ? 
+//Sonner is a toast library for React. It's a simple and easy-to-use toast library that allows you to display toast notifications in your application.
 import { Toaster } from 'sonner';
 
 import { ThemeProvider } from '@/components/theme-provider';
@@ -6,9 +9,10 @@ import { ThemeProvider } from '@/components/theme-provider';
 import './globals.css';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://chat.vercel.ai'),
-  title: 'Next.js Chatbot Template',
-  description: 'Next.js chatbot template using the AI SDK.',
+  //later change it to the production url. (https://veritaforge.com) - Whatever is the UI link. 
+  metadataBase: new URL('http://localhost:3000'),
+  title: 'VeritaForge Research',
+  description: 'VeritaForge Research - Forge Investment Truth.',
 };
 
 export const viewport = {

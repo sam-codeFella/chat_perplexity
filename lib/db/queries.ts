@@ -92,15 +92,23 @@ export async function deleteChatById({ id }: { id: string }) {
   }
 }
 
-export async function getChatsByUserId({ id }: { id: string }) {
+export async function getChatsByUserId({ id, token }: { id: string; token: string }) {
   try {
-    return await drizzleDb
-      .select()
-      .from(chat)
-      .where(eq(chat.userId, id))
-      .orderBy(desc(chat.createdAt));
+    const response = await fetch('http://localhost:8000/chats', {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
   } catch (error) {
-    console.error('Failed to get chats by user from database');
+    console.error('Failed to get chats by user from authentication service:', error);
     throw error;
   }
 }

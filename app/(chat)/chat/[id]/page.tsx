@@ -8,10 +8,11 @@ import { convertToUIMessages } from '@/lib/utils';
 import { DataStreamHandler } from '@/components/data-stream-handler';
 import { DEFAULT_CHAT_MODEL } from '@/lib/ai/models';
 
+//this is the page that displays the chat. Be it historic or new.
 export default async function Page(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const { id } = params;
-  const chat = await getChatById({ id });
+  const chat = await getChatById({ id }); //this needs to be called from the backend. 
 
   if (!chat) {
     notFound();
@@ -29,6 +30,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
     }
   }
 
+// this call needs to be from backend.
   const messagesFromDb = await getMessagesByChatId({
     id,
   });

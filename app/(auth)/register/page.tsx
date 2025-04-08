@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 //below are all hooks. -> What are hooks ?
+//Hooks allow function components to have access to state and other React features. Because of this, class components are generally no longer needed.
 import { useActionState, useEffect, useState } from 'react';
 
 import { AuthForm } from '@/components/auth-form';
@@ -12,6 +13,9 @@ import { SubmitButton } from '@/components/submit-button';
 import { register, type RegisterActionState } from '../actions';
 import { toast } from '@/components/toast';
 
+/*
+See the fact that we are using hooks like useState, useEffect, useRouter, etc. in the functional component defined below.
+*/
 export default function Page() {
   const router = useRouter();
 

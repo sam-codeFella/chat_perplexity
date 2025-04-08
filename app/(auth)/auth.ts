@@ -12,7 +12,8 @@ interface ExtendedSession extends Session {
   };
 }
 
-//okay this is well understood now. 
+//okay this is well understood now.
+
 /*
 Credentials Provider
 The Credentials provider handles username/password authentication:

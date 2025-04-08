@@ -8,6 +8,7 @@ import Script from 'next/script';
 
 export const experimental_ppr = true;
 
+//This is the layout for the chat page. It encapsulates the sidebar and the chat. 
 export default async function Layout({
   children,
 }: {
