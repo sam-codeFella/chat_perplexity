@@ -8,7 +8,7 @@ import { auth } from '@/app/(auth)/auth';
 import { systemPrompt } from '@/lib/ai/prompts';
 import {
   deleteChatById,
-  getChatById,
+  getChatById, getChatsByUserId,
 } from '@/lib/db/queries';
 import {
   getMostRecentUserMessage,
@@ -32,6 +32,7 @@ interface ExtendedSession extends Session {
 
 export const maxDuration = 60;
 
+//This is the post request with all the details sent during every message is sent.
 export async function POST(request: Request) {
   try {
     const {
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
     } = await request.json();
 
     const session = (await auth()) as ExtendedSession | null;
+
     if (!session?.user?.id || !session.user.token) {
       return new Response('Unauthorized', { status: 401 });
     }
@@ -134,14 +136,22 @@ export async function DELETE(request: Request) {
     return new Response('Not Found', { status: 404 });
   }
 
+  const session = (await auth()) as ExtendedSession | null;
+  if (!session?.user?.id || !session.user.token) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
+  /*
+  This is older code.
   const session = await auth();
 
   if (!session || !session.user) {
     return new Response('Unauthorized', { status: 401 });
-  }
+  }*/
 
   try {
-    const chat = await getChatById({ id });
+    //const chats = await getChatsByUserId({ id: session.user.id, token: session.user.token });
+    const chat = await getChatById({ id, token: session.user.token });
 
     if (chat.userId !== session.user.id) {
       return new Response('Unauthorized', { status: 401 });

@@ -113,12 +113,26 @@ export async function getChatsByUserId({ id, token }: { id: string; token: strin
   }
 }
 
-export async function getChatById({ id }: { id: string }) {
+export async function getChatById({ id, token }: { id: string; token: string }) {
   try {
-    const [selectedChat] = await drizzleDb.select().from(chat).where(eq(chat.id, id));
-    return selectedChat;
+    const response = await fetch(`http://localhost:8000/chats/${id}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    //we are unable to send the right token.
+    console.log(token);
+    console.log(response);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
   } catch (error) {
-    console.error('Failed to get chat by id from database');
+    console.error('Failed to get chat by id from authentication service:', error);
     throw error;
   }
 }
@@ -147,56 +161,54 @@ export async function voteMessage({
   chatId,
   messageId,
   type,
+  token,
 }: {
   chatId: string;
   messageId: string;
   type: 'up' | 'down';
+  token: string;
 }) {
-  const existingVote = await drizzleDb
-    .select()
-    .from(votes)
-    .where(
-      and(
-        eq(votes.chatId, chatId),
-        eq(votes.messageId, messageId)
-      )
-    )
-    .execute();
+  try {
+    const response = await fetch(`http://localhost:8000/chats/${chatId}/messages/${messageId}/vote`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ type })
+    });
 
-  if (existingVote.length > 0) {
-    await drizzleDb
-      .update(votes)
-      .set({ type })
-      .where(
-        and(
-          eq(votes.chatId, chatId),
-          eq(votes.messageId, messageId)
-        )
-      )
-      .execute();
-    return existingVote[0];
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Failed to vote on message:', error);
+    throw error;
   }
-
-  const newVote = await drizzleDb
-    .insert(votes)
-    .values({
-      id: generateUUID(),
-      chatId,
-      messageId,
-      type,
-    })
-    .returning()
-    .execute();
-
-  return vote[0];
 }
 
-export async function getVotesByChatId({ id }: { id: string }) {
-  return await drizzleDb
-    .select()
-    .from(votes)
-    .where(eq(votes.chatId, id))
-    .execute();
+export async function getVotesByChatId({ id, token }: { id: string; token: string }) {
+  try {
+    const response = await fetch(`http://localhost:8000/chats/${id}/votes`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Failed to get votes by chat id from authentication service:', error);
+    throw error;
+  }
 }
 
 export async function saveDocument({

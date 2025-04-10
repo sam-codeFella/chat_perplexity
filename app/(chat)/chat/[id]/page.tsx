@@ -7,18 +7,37 @@ import { getChatById, getMessagesByChatId } from '@/lib/db/queries';
 import { convertToUIMessages } from '@/lib/utils';
 import { DataStreamHandler } from '@/components/data-stream-handler';
 import { DEFAULT_CHAT_MODEL } from '@/lib/ai/models';
+import {Session} from "next-auth";
+
+interface ExtendedSession extends Session {
+  user: {
+    id: string;
+    token: string;
+  } & Session['user'];
+}
 
 //this is the page that displays the chat. Be it historic or new.
 export default async function Page(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const { id } = params;
-  const chat = await getChatById({ id }); //this needs to be called from the backend. 
+
+  console.log("Loaded this page dynamics. ")
+  const session = (await auth()) as ExtendedSession | null;
+  if (!session?.user?.id || !session.user.token) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+  console.log("calling this chat's page")
+
+  console.log(id)
+  console.log(session.user.token)
+
+  const chat = await getChatById({ id, token: session.user.token }); //this needs to be called from the backend.
 
   if (!chat) {
     notFound();
   }
 
-  const session = await auth();
+ /* const session = await auth();*/
 
   if (chat.visibility === 'private') {
     if (!session || !session.user) {
@@ -30,10 +49,12 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
     }
   }
 
-// this call needs to be from backend.
-  const messagesFromDb = await getMessagesByChatId({
+  // this call needs to be from backend. -> I think this is failing at the moment.
+ /* const messagesFromDb = await getMessagesByChatId({
     id,
-  });
+  });*/
+
+  const messagesFromDb = chat.messages;
 
   const cookieStore = await cookies();
   const chatModelFromCookie = cookieStore.get('chat-model');

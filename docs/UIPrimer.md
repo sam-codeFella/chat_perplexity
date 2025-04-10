@@ -71,6 +71,110 @@ This layout implements several important features:
 
 This well-structured layout provides a solid foundation for a modern Next.js application with excellent user experience considerations built in.
 
+# Session Management in NextAuth.js
+
+This document explains how session management works in your NextAuth.js setup.
+
+---
+
+## 1. Session Storage and Maintenance
+
+- **NextAuth.js** uses **JWT (JSON Web Tokens)** for session management by default.
+- After a successful sign-in:
+  - The **JWT** is stored as an **HTTP-only cookie** named `next-auth.session-token`.
+  - This cookie is automatically sent with every request to your application.
+
+---
+
+## 2. Session Flow After Sign-In
+
+### a) Initial Token Creation:
+- After successful authentication:
+  - The **JWT callback** creates a token.
+  - This token is encrypted and stored as a cookie.
+
+### b) Session Management:
+- For each request, NextAuth.js:
+  1. Reads the session token from the cookie.
+  2. Decrypts and validates the JWT.
+  3. Runs the session callback to create the session object.
+  4. Makes this session data available through:
+    - The `useSession()` hook.
+    - The `getServerSession()` function.
+
+---
+
+## 3. How Subsequent Calls Work
+
+### Server Components or API Routes:
+- Access the session using:
+  import { getServerSession } from "next-auth";
+
+### Client Components:
+- Access the session using:
+- import { useSession } from "next-auth/react";
+
+### The Session Object Includes:
+- The user's ID and token, which can be used for:
+- Authenticating API requests.
+- Checking user permissions.
+- Accessing user-specific data.
+
+---
+
+## 4. Security Features
+
+- The JWT is stored in an **HTTP-only cookie**, protecting against XSS attacks.
+- The token is encrypted using the `NEXTAUTH_SECRET` from your environment variables.
+- Sessions automatically expire based on your configuration (default: **30 days**).
+- Sessions are automatically refreshed during active use.
+
+---
+
+## 5. Example of How It's Used
+
+Here’s an example of integrating session handling in an API route (`auth.ts`):
+import { getServerSession } from "next-auth";
+
+export default async function handler(req, res) {
+const session = await getServerSession(req, res);
+
+if (!session) {
+return res.status(401).json({ message: "Unauthorized" });
+}
+
+// Use session data
+res.status(200).json({ user: session.user });
+}
+
+---
+
+## 6. Automatic Session Handling by NextAuth.js
+
+NextAuth.js automatically manages:
+- **Session renewal**.
+- **Token rotation** (if configured).
+- **Cookie management**.
+- **CSRF protection**.
+- **Secure cookie settings**.
+
+---
+
+## Key Benefits of This System
+
+1. **Stateless Design**:
+  - No server-side storage is required for sessions.
+  - Session state is maintained entirely in the encrypted JWT cookie.
+
+2. **Scalability**:
+  - Each request can be authenticated independently without database lookups for session verification.
+
+3. **Security**:
+  - Secure cookies and encryption protect against common vulnerabilities.
+
+---
+
+
 # Understanding Page.tsx across all submodules. 
 This is the main file that holds what is actually rendered on that page ? 
 How does it tie in with the core element in Layout.tsx ? 
