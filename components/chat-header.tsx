@@ -12,21 +12,25 @@ import { useSidebar } from './ui/sidebar';
 import { memo } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { VisibilityType, VisibilitySelector } from './visibility-selector';
+import { Input } from './ui/input';
 
 function PureChatHeader({
   chatId,
   selectedModelId,
   selectedVisibilityType,
   isReadonly,
+  title,
+  onTitleChange,
 }: {
   chatId: string;
   selectedModelId: string;
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
+  title: string;
+  onTitleChange: (title: string) => void;
 }) {
   const router = useRouter();
   const { open } = useSidebar();
-
   const { width: windowWidth } = useWindowSize();
 
   return (
@@ -51,6 +55,15 @@ function PureChatHeader({
           <TooltipContent>New Chat</TooltipContent>
         </Tooltip>
       )}
+
+      <div className="flex-1 min-w-0">
+        <Input
+          value={title}
+          onChange={(e) => onTitleChange(e.target.value)}
+          className="border-0 bg-transparent text-lg font-semibold focus-visible:ring-0 focus-visible:ring-offset-0"
+          disabled={isReadonly}
+        />
+      </div>
 
       {!isReadonly && (
         <ModelSelector

@@ -2,7 +2,7 @@
 
 import type { Attachment, Message } from 'ai';
 import { useChat } from '@ai-sdk/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import { ChatHeader } from '@/components/chat-header';
 import type { Vote } from '@/lib/db/schema';
@@ -20,14 +20,27 @@ export function Chat({
   selectedChatModel,
   selectedVisibilityType,
   isReadonly,
+  initialTitle,
 }: {
   id: string;
   initialMessages: Array<Message>;
   selectedChatModel: string;
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
+  initialTitle?: string;
 }) {
   const { mutate } = useSWRConfig();
+  const [title, setTitle] = useState(initialTitle || 'New Chat');
+
+  useEffect(() => {
+    // Get the company name from localStorage if it exists
+    const storedTitle = localStorage.getItem('currentChatTitle');
+    if (storedTitle) {
+      setTitle(storedTitle);
+      // Clear the stored title after using it
+      localStorage.removeItem('currentChatTitle');
+    }
+  }, []);
 
   const {
     messages,
@@ -70,6 +83,8 @@ export function Chat({
           selectedModelId={selectedChatModel}
           selectedVisibilityType={selectedVisibilityType}
           isReadonly={isReadonly}
+          title={title}
+          onTitleChange={setTitle}
         />
 
         <Messages

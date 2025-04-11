@@ -11,6 +11,9 @@ export default async function Page() {
   const cookieStore = await cookies();
   const modelIdFromCookie = cookieStore.get('chat-model');
 
+  // Get the company name from localStorage (this will be handled by the client component)
+  const initialTitle = 'New Chat'; // Default title if none is set
+
   if (!modelIdFromCookie) {
     return (
       <>
@@ -21,6 +24,7 @@ export default async function Page() {
           selectedChatModel={DEFAULT_CHAT_MODEL}
           selectedVisibilityType="private"
           isReadonly={false}
+          initialTitle={initialTitle}
         />
         <DataStreamHandler id={id} />
       </>
@@ -36,6 +40,7 @@ export default async function Page() {
         selectedChatModel={modelIdFromCookie.value}
         selectedVisibilityType="private"
         isReadonly={false}
+        initialTitle={initialTitle}
       />
       <DataStreamHandler id={id} />
     </>
