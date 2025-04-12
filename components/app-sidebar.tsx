@@ -1,5 +1,6 @@
 'use client';
 
+// main sidebar that is shown at the very start.
 import type { User } from 'next-auth';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';

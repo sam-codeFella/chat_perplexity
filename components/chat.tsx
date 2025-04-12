@@ -13,6 +13,8 @@ import { Messages } from './messages';
 import { VisibilityType } from './visibility-selector';
 import { useArtifactSelector } from '@/hooks/use-artifact';
 import { toast } from 'sonner';
+import { FinancialCharts } from './FinancialCharts';
+import { KeyFinancialInfo } from './KeyFinancialInfo';
 
 export function Chat({
   id,
@@ -77,7 +79,7 @@ export function Chat({
 
   return (
     <>
-      <div className="flex flex-col min-w-0 h-dvh bg-background">
+      <div className="flex flex-col min-w-0 h-dvh bg-background overflow-hidden">
         <ChatHeader
           chatId={id}
           selectedModelId={selectedChatModel}
@@ -87,16 +89,30 @@ export function Chat({
           onTitleChange={setTitle}
         />
 
-        <Messages
-          chatId={id}
-          status={status}
-          votes={votes}
-          messages={messages}
-          setMessages={setMessages}
-          reload={reload}
-          isReadonly={isReadonly}
-          isArtifactVisible={isArtifactVisible}
-        />
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="flex flex-col">
+            {/* Financial Charts Section */}
+            <div className="mx-auto w-full md:max-w-3xl px-4">
+              <FinancialCharts companyName={title} />
+            </div>
+
+            {/* Key Financial Information Section */}
+            <div className="mx-auto w-full md:max-w-3xl px-4">
+              <KeyFinancialInfo companyName={title} />
+            </div>
+
+            <Messages
+              chatId={id}
+              status={status}
+              votes={votes}
+              messages={messages}
+              setMessages={setMessages}
+              reload={reload}
+              isReadonly={isReadonly}
+              isArtifactVisible={isArtifactVisible}
+            />
+          </div>
+        </div>
 
         <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
           {!isReadonly && (
