@@ -21,11 +21,11 @@ import { MessageReasoning } from './message-reasoning';
 import { WebSearch } from './web-search';
 import { ExternalLinkIcon } from './icons';
 import ReactMarkdown from 'react-markdown';
-import type { Message as CustomMessage } from '@/lib/types';
-import type { Citation, WebSearchResult } from '@/lib/types';
+import type { WebSearchResult, Citation } from '@/lib/types';
 import { ComponentProps } from 'react';
 import { voteMessage } from '@/lib/actions';
 import { ThumbUpIcon, ThumbDownIcon } from './icons';
+import PdfViewer from './PdfViewer';
 
 const PurePreviewMessage = ({
   chatId,
@@ -49,6 +49,25 @@ const PurePreviewMessage = ({
   isReadonly: boolean;
 }) => {
   const [mode, setMode] = useState<'view' | 'edit'>('view');
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [showPdf, setShowPdf] = useState(false);
+
+  const handleCheckSources = async () => {
+    try {
+      const response = await fetch('http://localhost:5001/fetch-highlighted-pdf');
+      if (response.ok) {
+        // Create a blob URL from the PDF response
+        const blob = await response.blob();
+        const pdfUrl = URL.createObjectURL(blob);
+        setPdfUrl(pdfUrl);
+        setShowPdf(true);
+      } else {
+        console.error('Failed to fetch PDF:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching PDF:', error);
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -86,8 +105,8 @@ const PurePreviewMessage = ({
               />
             ) : (
               <>
-                {message.role === 'assistant' && message.webSearchResults && (
-                  <WebSearch results={message.webSearchResults} />
+                {message.role === 'assistant' && (message as any).webSearchResults && (
+                  <WebSearch results={(message as any).webSearchResults} />
                 )}
                 <div
                   className={cn(
@@ -152,11 +171,31 @@ const PurePreviewMessage = ({
                   </ReactMarkdown>
                 </div>
 
-                {message.role === 'assistant' && message.citations && (
+                {message.role === 'assistant' && (
+                  <>
+                    <div className="mt-2">
+                      <Button
+                        variant="outline"
+                        onClick={handleCheckSources}
+                        className="text-xs"
+                      >
+                        Check Sources
+                      </Button>
+                    </div>
+                    
+                    {showPdf && pdfUrl && (
+                      <div className="mt-4">
+                        <PdfViewer pdfUrl={pdfUrl} />
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {message.role === 'assistant' && (message as any).citations && (
                   <div className="mt-4 flex flex-col gap-2">
                     <div className="text-sm font-medium text-muted-foreground">Citations</div>
                     <div className="flex flex-wrap gap-2">
-                      {message.citations.map((citation: Citation, index: number) => (
+                      {((message as any).citations as Citation[]).map((citation: Citation, index: number) => (
                         <a
                           key={index}
                           href={citation.url}
@@ -174,12 +213,12 @@ const PurePreviewMessage = ({
               </>
             )}
 
-            {message.attachments && message.attachments.length > 0 && (
+            {(message as any).attachments && (message as any).attachments.length > 0 && (
               <div
                 className="flex flex-wrap gap-2 mt-2"
                 data-testid="message-attachments"
               >
-                {message.attachments.map((attachment: { name: string; url: string; contentType: string }) => (
+                {((message as any).attachments as Array<{ name: string; url: string; contentType: string }>).map((attachment) => (
                   <PreviewAttachment
                     key={attachment.name}
                     attachment={attachment}
