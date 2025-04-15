@@ -5,12 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b4b1527b-e688-43ce-8cbd-2ed311b41510" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/app/(chat)/api/chat/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/(chat)/api/chat/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/(chat)/api/history/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/app/(chat)/api/history/route.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/(chat)/chat/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(chat)/chat/[id]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/(chat)/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(chat)/layout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/sidebar-history.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/sidebar-history.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/db/queries.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/db/queries.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/chat.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/chat.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/message.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/message.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -60,10 +56,29 @@
       <updated>1742195693430</updated>
       <workItem from="1742195694618" duration="2384000" />
       <workItem from="1742280098799" duration="11165000" />
+      <workItem from="1744097809147" duration="35879000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/app/(chat)/api/history/route.ts</url>
+          <line>1</line>
+          <properties lambdaOrdinal="-1" />
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/app/(chat)/api/vote/route.ts</url>
+          <line>22</line>
+          <properties lambdaOrdinal="-1" />
+          <option name="timeStamp" value="5" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

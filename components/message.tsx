@@ -26,6 +26,7 @@ import { ComponentProps } from 'react';
 import { voteMessage } from '@/lib/actions';
 import { ThumbUpIcon, ThumbDownIcon } from './icons';
 import PdfViewer from './PdfViewer';
+import { usePdfDisplay } from '@/hooks/use-pdf-display';
 
 const PurePreviewMessage = ({
   chatId,
@@ -49,8 +50,7 @@ const PurePreviewMessage = ({
   isReadonly: boolean;
 }) => {
   const [mode, setMode] = useState<'view' | 'edit'>('view');
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [showPdf, setShowPdf] = useState(false);
+  const { showPdf } = usePdfDisplay();
 
   const handleCheckSources = async () => {
     try {
@@ -59,8 +59,7 @@ const PurePreviewMessage = ({
         // Create a blob URL from the PDF response
         const blob = await response.blob();
         const pdfUrl = URL.createObjectURL(blob);
-        setPdfUrl(pdfUrl);
-        setShowPdf(true);
+        showPdf(pdfUrl);
       } else {
         console.error('Failed to fetch PDF:', response.statusText);
       }
@@ -172,23 +171,15 @@ const PurePreviewMessage = ({
                 </div>
 
                 {message.role === 'assistant' && (
-                  <>
-                    <div className="mt-2">
-                      <Button
-                        variant="outline"
-                        onClick={handleCheckSources}
-                        className="text-xs"
-                      >
-                        Check Sources
-                      </Button>
-                    </div>
-                    
-                    {showPdf && pdfUrl && (
-                      <div className="mt-4">
-                        <PdfViewer pdfUrl={pdfUrl} />
-                      </div>
-                    )}
-                  </>
+                  <div className="mt-2">
+                    <Button
+                      variant="outline"
+                      onClick={handleCheckSources}
+                      className="text-xs"
+                    >
+                      Check Sources
+                    </Button>
+                  </div>
                 )}
 
                 {message.role === 'assistant' && (message as any).citations && (
