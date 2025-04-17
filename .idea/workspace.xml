@@ -5,8 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b4b1527b-e688-43ce-8cbd-2ed311b41510" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/components/chat.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/chat.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/components/message.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/message.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/company-name-dialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/company-name-dialog.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -69,13 +68,11 @@
         <line-breakpoint enabled="true" type="javascript">
           <url>file://$PROJECT_DIR$/app/(chat)/api/history/route.ts</url>
           <line>1</line>
-          <properties lambdaOrdinal="-1" />
           <option name="timeStamp" value="3" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="javascript">
           <url>file://$PROJECT_DIR$/app/(chat)/api/vote/route.ts</url>
           <line>22</line>
-          <properties lambdaOrdinal="-1" />
           <option name="timeStamp" value="5" />
         </line-breakpoint>
       </breakpoints>

@@ -30,6 +30,13 @@ interface ExtendedSession extends Session {
   } & Session['user'];
 }
 
+interface ExternalMessage {
+  id: string;
+  content: string;
+  role: 'user' | 'assistant';
+  created_at: string;
+}
+
 export const maxDuration = 60;
 
 //This is the post request with all the details sent during every message is sent.
@@ -76,48 +83,84 @@ export async function POST(request: Request) {
       return new Response('Failed to create chat', { status: response.status });
     }
 
+    // Get chat data for use in the streaming process
     const chatData = await response.json();
 
     return createDataStreamResponse({
-      execute: (dataStream) => {
-        const result = streamText({
-          model: myProvider.languageModel(selectedChatModel),
-          system: systemPrompt({ selectedChatModel }),
-          messages,
-          maxSteps: 5,
-          experimental_activeTools:
-            selectedChatModel === 'chat-model-reasoning'
-              ? []
-              : [
-                  'getWeather',
-                  'createDocument',
-                  'updateDocument',
-                  'requestSuggestions',
-                ],
-          experimental_transform: smoothStream({ chunking: 'word' }),
-          tools: {
-            getWeather,
-            createDocument: createDocument({ session, dataStream }),
-            updateDocument: updateDocument({ session, dataStream }),
-            requestSuggestions: requestSuggestions({
-              session,
-              dataStream,
-            }),
-          },
-          onFinish: async ({ response, reasoning }) => {
-            // Message saving is now handled by the API
-          },
-          experimental_telemetry: {
-            isEnabled: isProductionEnvironment,
-            functionId: 'stream-text',
-          },
-        });
+      execute: async (dataStream) => {
+        // Extract assistant message from the response
+        const assistantMessage = chatData.messages?.find((msg: ExternalMessage) => msg.role === 'assistant');
+        
+        if (assistantMessage?.content) {
+          // If the external API provides a message in the format, stream it directly
+          // Split the response by words to simulate streaming
+          const words = assistantMessage.content.split(/\s+/);
+          for (const word of words) {
+            await new Promise(resolve => setTimeout(resolve, 20)); // Simulate streaming delay
+            dataStream.writeData({
+              type: 'text-delta',
+              content: word + ' '
+            });
+          }
+          dataStream.writeData({
+            type: 'finish',
+            content: ''
+          });
+        } else if (chatData.aiResponse) {
+          // Fallback to the previous implementation
+          const words = chatData.aiResponse.split(/\s+/);
+          for (const word of words) {
+            await new Promise(resolve => setTimeout(resolve, 20));
+            dataStream.writeData({
+              type: 'text-delta',
+              content: word + ' '
+            });
+          }
+          dataStream.writeData({
+            type: 'finish',
+            content: ''
+          });
+        } else {
+          // If no direct AI response, use the AI SDK's streamText
+          const result = streamText({
+            model: myProvider.languageModel(selectedChatModel),
+            system: systemPrompt({ selectedChatModel }),
+            messages,
+            maxSteps: 5,
+            experimental_activeTools:
+              selectedChatModel === 'chat-model-reasoning'
+                ? []
+                : [
+                    'getWeather',
+                    'createDocument',
+                    'updateDocument',
+                    'requestSuggestions',
+                  ],
+            experimental_transform: smoothStream({ chunking: 'word' }),
+            tools: {
+              getWeather,
+              createDocument: createDocument({ session, dataStream }),
+              updateDocument: updateDocument({ session, dataStream }),
+              requestSuggestions: requestSuggestions({
+                session,
+                dataStream,
+              }),
+            },
+            onFinish: async ({ response, reasoning }) => {
+              // Message saving is now handled by the API
+            },
+            experimental_telemetry: {
+              isEnabled: isProductionEnvironment,
+              functionId: 'stream-text',
+            },
+          });
 
-        result.consumeStream();
+          result.consumeStream();
 
-        result.mergeIntoDataStream(dataStream, {
-          sendReasoning: true,
-        });
+          result.mergeIntoDataStream(dataStream, {
+            sendReasoning: true,
+          });
+        }
       },
       onError: () => {
         return 'Oops, an error occurred!';
