@@ -3,7 +3,7 @@
 import type { ChatRequestOptions, Message } from 'ai';
 import cx from 'classnames';
 import { AnimatePresence, motion } from 'framer-motion';
-import { memo, useState } from 'react';
+import { memo, useState, useEffect } from 'react';
 import type { Vote } from '@/lib/db/schema';
 import { DocumentToolCall, DocumentToolResult } from './document';
 import { PencilEditIcon, SparklesIcon } from './icons';
@@ -49,16 +49,50 @@ const PurePreviewMessage = ({
   ) => Promise<string | null | undefined>;
   isReadonly: boolean;
 }) => {
+  console.log('[PurePreviewMessage] Initializing with props:', {
+    chatId,
+    messageId: message.id,
+    messageRole: message.role,
+    messageContent: message.content?.substring(0, 50),
+    vote,
+    isLoading,
+    isReadonly
+  });
+
   const [mode, setMode] = useState<'view' | 'edit'>('view');
   const { showPdf } = usePdfDisplay();
+  
+  useEffect(() => {
+    console.log('[PurePreviewMessage] Component mounted', { messageId: message.id });
+    return () => {
+      console.log('[PurePreviewMessage] Component unmounting', { messageId: message.id });
+    };
+  }, [message.id]);
+
+  useEffect(() => {
+    console.log('[PurePreviewMessage] Mode changed:', mode);
+  }, [mode]);
+
+  useEffect(() => {
+    console.log('[PurePreviewMessage] isLoading changed:', isLoading);
+  }, [isLoading]);
+
+  useEffect(() => {
+    console.log('[PurePreviewMessage] Vote changed:', vote);
+  }, [vote]);
 
   const handleCheckSources = async () => {
+    console.log('[PurePreviewMessage] handleCheckSources clicked');
     try {
+      console.log('[PurePreviewMessage] Fetching PDF from endpoint');
       const response = await fetch('http://localhost:5001/fetch-highlighted-pdf');
+      console.log('[PurePreviewMessage] PDF fetch response status:', response.status);
       if (response.ok) {
         // Create a blob URL from the PDF response
         const blob = await response.blob();
+        console.log('[PurePreviewMessage] Created PDF blob:', { size: blob.size });
         const pdfUrl = URL.createObjectURL(blob);
+        console.log('[PurePreviewMessage] Created PDF URL:', pdfUrl);
         showPdf(pdfUrl);
       } else {
         console.error('Failed to fetch PDF:', response.statusText);
@@ -68,6 +102,15 @@ const PurePreviewMessage = ({
     }
   };
 
+  console.log('[PurePreviewMessage] Rendering message:', { 
+    id: message.id, 
+    role: message.role,
+    mode,
+    hasAttachments: !!(message as any).attachments?.length,
+    hasCitations: !!(message as any).citations?.length,
+    hasWebSearchResults: !!(message as any).webSearchResults
+  });
+
   return (
     <AnimatePresence>
       <motion.div
@@ -76,6 +119,8 @@ const PurePreviewMessage = ({
         initial={{ y: 5, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         data-role={message.role}
+        onAnimationStart={() => console.log('[PurePreviewMessage] Animation started', { messageId: message.id })}
+        onAnimationComplete={() => console.log('[PurePreviewMessage] Animation completed', { messageId: message.id })}
       >
         <div
           className={cn(
@@ -98,8 +143,14 @@ const PurePreviewMessage = ({
             {mode === 'edit' ? (
               <MessageEditor
                 message={message}
-                setMode={setMode}
-                setMessages={setMessages}
+                setMode={(newMode) => {
+                  console.log('[PurePreviewMessage] Setting mode from MessageEditor:', newMode);
+                  setMode(newMode);
+                }}
+                setMessages={(newMessages) => {
+                  console.log('[PurePreviewMessage] Setting messages from MessageEditor');
+                  setMessages(newMessages);
+                }}
                 reload={reload}
               />
             ) : (
@@ -119,16 +170,19 @@ const PurePreviewMessage = ({
                   <ReactMarkdown
                     components={{
                       p: ({ children }) => <p>{children}</p>,
-                      a: ({ href, children }) => (
-                        <a
-                          href={href}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline"
-                        >
-                          {children}
-                        </a>
-                      ),
+                      a: ({ href, children }) => {
+                        console.log('[PurePreviewMessage] Rendering link:', href);
+                        return (
+                          <a
+                            href={href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            {children}
+                          </a>
+                        );
+                      },
                       pre: ({ children }) => (
                         <div className="relative">
                           <pre className="bg-muted/50 rounded-lg p-4 overflow-x-auto">
@@ -151,6 +205,7 @@ const PurePreviewMessage = ({
                         }
                         const match = /language-(\w+)/.exec(className || '');
                         const lang = match ? match[1] : '';
+                        console.log('[PurePreviewMessage] Rendering code block with language:', lang);
                         return (
                           <div className="relative">
                             {lang && (
@@ -174,7 +229,10 @@ const PurePreviewMessage = ({
                   <div className="mt-2">
                     <Button
                       variant="outline"
-                      onClick={handleCheckSources}
+                      onClick={() => {
+                        console.log('[PurePreviewMessage] Check Sources button clicked');
+                        handleCheckSources();
+                      }}
                       className="text-xs"
                     >
                       Check Sources
@@ -186,18 +244,21 @@ const PurePreviewMessage = ({
                   <div className="mt-4 flex flex-col gap-2">
                     <div className="text-sm font-medium text-muted-foreground">Citations</div>
                     <div className="flex flex-wrap gap-2">
-                      {((message as any).citations as Citation[]).map((citation: Citation, index: number) => (
-                        <a
-                          key={index}
-                          href={citation.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-primary hover:underline flex items-center gap-1 bg-muted/50 px-2 py-1 rounded"
-                        >
-                          {citation.title}
-                          <ExternalLinkIcon className="h-3 w-3" />
-                        </a>
-                      ))}
+                      {((message as any).citations as Citation[]).map((citation: Citation, index: number) => {
+                        console.log('[PurePreviewMessage] Rendering citation:', citation.title);
+                        return (
+                          <a
+                            key={index}
+                            href={citation.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline flex items-center gap-1 bg-muted/50 px-2 py-1 rounded"
+                          >
+                            {citation.title}
+                            <ExternalLinkIcon className="h-3 w-3" />
+                          </a>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -209,12 +270,15 @@ const PurePreviewMessage = ({
                 className="flex flex-wrap gap-2 mt-2"
                 data-testid="message-attachments"
               >
-                {((message as any).attachments as Array<{ name: string; url: string; contentType: string }>).map((attachment) => (
-                  <PreviewAttachment
-                    key={attachment.name}
-                    attachment={attachment}
-                  />
-                ))}
+                {((message as any).attachments as Array<{ name: string; url: string; contentType: string }>).map((attachment) => {
+                  console.log('[PurePreviewMessage] Rendering attachment:', attachment.name);
+                  return (
+                    <PreviewAttachment
+                      key={attachment.name}
+                      attachment={attachment}
+                    />
+                  );
+                })}
               </div>
             )}
 
@@ -224,6 +288,7 @@ const PurePreviewMessage = ({
                   variant="ghost"
                   size="icon"
                   onClick={() => {
+                    console.log('[PurePreviewMessage] Upvote button clicked, current vote:', vote?.type);
                     if (vote?.type === 'up') return;
                     voteMessage({
                       chatId,
@@ -242,6 +307,7 @@ const PurePreviewMessage = ({
                   variant="ghost"
                   size="icon"
                   onClick={() => {
+                    console.log('[PurePreviewMessage] Downvote button clicked, current vote:', vote?.type);
                     if (vote?.type === 'down') return;
                     voteMessage({
                       chatId,
@@ -268,25 +334,60 @@ const PurePreviewMessage = ({
 export const PreviewMessage = memo(
   PurePreviewMessage,
   (prevProps, nextProps) => {
-    if (prevProps.isLoading !== nextProps.isLoading) return false;
-    if (prevProps.message.reasoning !== nextProps.message.reasoning)
+    console.log('[PreviewMessage] Memo comparison:', {
+      messageId: nextProps.message.id,
+      isEqual: equal(prevProps.message, nextProps.message),
+      prevLoading: prevProps.isLoading,
+      nextLoading: nextProps.isLoading,
+      prevContent: prevProps.message.content?.substring(0, 30),
+      nextContent: nextProps.message.content?.substring(0, 30),
+      contentEqual: prevProps.message.content === nextProps.message.content,
+      reasoningEqual: prevProps.message.reasoning === nextProps.message.reasoning,
+      toolInvocationsEqual: equal(prevProps.message.toolInvocations, nextProps.message.toolInvocations),
+      voteEqual: equal(prevProps.vote, nextProps.vote),
+    });
+
+    if (prevProps.isLoading !== nextProps.isLoading) {
+      console.log('[PreviewMessage] Re-rendering due to isLoading change');
       return false;
-    if (prevProps.message.content !== nextProps.message.content) return false;
+    }
+    if (prevProps.message.reasoning !== nextProps.message.reasoning) {
+      console.log('[PreviewMessage] Re-rendering due to reasoning change');
+      return false;
+    }
+    if (prevProps.message.content !== nextProps.message.content) {
+      console.log('[PreviewMessage] Re-rendering due to content change');
+      return false;
+    }
     if (
       !equal(
         prevProps.message.toolInvocations,
         nextProps.message.toolInvocations,
       )
-    )
+    ) {
+      console.log('[PreviewMessage] Re-rendering due to toolInvocations change');
       return false;
-    if (!equal(prevProps.vote, nextProps.vote)) return false;
+    }
+    if (!equal(prevProps.vote, nextProps.vote)) {
+      console.log('[PreviewMessage] Re-rendering due to vote change');
+      return false;
+    }
 
+    console.log('[PreviewMessage] Skipping re-render, props are equal');
     return true;
   },
 );
 
 export const ThinkingMessage = () => {
+  console.log('[ThinkingMessage] Rendering thinking message');
   const role = 'assistant';
+
+  useEffect(() => {
+    console.log('[ThinkingMessage] Component mounted');
+    return () => {
+      console.log('[ThinkingMessage] Component unmounting');
+    };
+  }, []);
 
   return (
     <motion.div
@@ -295,6 +396,8 @@ export const ThinkingMessage = () => {
       initial={{ y: 5, opacity: 0 }}
       animate={{ y: 0, opacity: 1, transition: { delay: 1 } }}
       data-role={role}
+      onAnimationStart={() => console.log('[ThinkingMessage] Animation started')}
+      onAnimationComplete={() => console.log('[ThinkingMessage] Animation completed')}
     >
       <div
         className={cx(

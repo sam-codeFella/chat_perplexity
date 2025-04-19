@@ -3,6 +3,7 @@ import {
   createDataStreamResponse,
   smoothStream,
   streamText,
+  StreamTextResult,
 } from 'ai';
 import { auth } from '@/app/(auth)/auth';
 import { systemPrompt } from '@/lib/ai/prompts';
@@ -92,36 +93,31 @@ export async function POST(request: Request) {
         const assistantMessage = chatData.messages?.find((msg: ExternalMessage) => msg.role === 'assistant');
         
         if (assistantMessage?.content) {
-          // If the external API provides a message in the format, stream it directly
-          // Split the response by words to simulate streaming
+          // Stream content from the external API using StreamTextResult
+          // Split into words to simulate streaming behavior
           const words = assistantMessage.content.split(/\s+/);
           for (const word of words) {
-            await new Promise(resolve => setTimeout(resolve, 20)); // Simulate streaming delay
+
             dataStream.writeData({
-              type: 'text-delta',
-              content: word + ' '
-            });
-          }
-          dataStream.writeData({
-            type: 'finish',
-            content: ''
-          });
-        } else if (chatData.aiResponse) {
-          // Fallback to the previous implementation
-          const words = chatData.aiResponse.split(/\s+/);
-          for (const word of words) {
-            await new Promise(resolve => setTimeout(resolve, 20));
+              "id": assistantMessage.id,
+              "createdAt":assistantMessage.created_at,
+              "role": "assistant",
+                content: word + " " });
+            await new Promise(res => setTimeout(res, 50)); // Simulate delay
+
+            /*await new Promise(resolve => setTimeout(resolve, 20)); // Simulate streaming delay
             dataStream.writeData({
-              type: 'text-delta',
+              type: 'text',
               content: word + ' '
-            });
+            });*/
           }
+          
+          // Mark the stream as finished
           dataStream.writeData({
-            type: 'finish',
-            content: ''
+            type: 'finish'
           });
         } else {
-          // If no direct AI response, use the AI SDK's streamText
+          // If no external API response, use the AI SDK's streamText
           const result = streamText({
             model: myProvider.languageModel(selectedChatModel),
             system: systemPrompt({ selectedChatModel }),
@@ -146,17 +142,13 @@ export async function POST(request: Request) {
                 dataStream,
               }),
             },
-            onFinish: async ({ response, reasoning }) => {
-              // Message saving is now handled by the API
-            },
             experimental_telemetry: {
               isEnabled: isProductionEnvironment,
               functionId: 'stream-text',
             },
           });
-
+          
           result.consumeStream();
-
           result.mergeIntoDataStream(dataStream, {
             sendReasoning: true,
           });

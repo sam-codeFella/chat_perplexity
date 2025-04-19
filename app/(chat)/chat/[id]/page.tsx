@@ -31,15 +31,29 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
   console.log(id)
   console.log(session.user.token)
 
-  const chat = await getChatById({ id, token: session.user.token }); //this needs to be called from the backend.
+  let chat;
+  let isNewChat = false;
 
-  if (!chat) {
-    notFound();
+  try {
+    chat = await getChatById({ id, token: session.user.token });
+    
+    if (!chat) {
+      notFound();
+    }
+  } catch (error) {
+    console.log('Chat not found, likely a new chat being created:', error);
+    // Create a default chat object for new chats
+    isNewChat = true;
+    chat = {
+      id,
+      userId: session.user.id,
+      visibility: 'private',
+      messages: [],
+    };
   }
 
- /* const session = await auth();*/
-
-  if (chat.visibility === 'private') {
+  // If it's not a new chat, do user permission checks
+  if (!isNewChat && chat.visibility === 'private') {
     if (!session || !session.user) {
       return notFound();
     }
@@ -49,12 +63,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
     }
   }
 
-  // this call needs to be from backend. -> I think this is failing at the moment.
- /* const messagesFromDb = await getMessagesByChatId({
-    id,
-  });*/
-
-  const messagesFromDb = chat.messages;
+  const messagesFromDb = chat.messages || [];
 
   const cookieStore = await cookies();
   const chatModelFromCookie = cookieStore.get('chat-model');
@@ -67,7 +76,8 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
           initialMessages={convertToUIMessages(messagesFromDb)}
           selectedChatModel={DEFAULT_CHAT_MODEL}
           selectedVisibilityType={chat.visibility}
-          isReadonly={session?.user?.id !== chat.userId}
+          isReadonly={!isNewChat && session?.user?.id !== chat.userId}
+          initialTitle={isNewChat ? 'New Chat' : undefined}
         />
         <DataStreamHandler id={id} />
       </>
@@ -81,7 +91,8 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
         initialMessages={convertToUIMessages(messagesFromDb)}
         selectedChatModel={chatModelFromCookie.value}
         selectedVisibilityType={chat.visibility}
-        isReadonly={session?.user?.id !== chat.userId}
+        isReadonly={!isNewChat && session?.user?.id !== chat.userId}
+        initialTitle={isNewChat ? 'New Chat' : undefined}
       />
       <DataStreamHandler id={id} />
     </>

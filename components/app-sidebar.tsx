@@ -20,6 +20,7 @@ import {
 import Link from 'next/link';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { CompanyNameDialog } from './company-name-dialog';
+import { generateUUID } from '@/lib/utils';
 
 export function AppSidebar({ user }: { user: User | undefined }) {
   const router = useRouter();
@@ -29,8 +30,13 @@ export function AppSidebar({ user }: { user: User | undefined }) {
   const handleNewChat = (companyName: string) => {
     setOpenMobile(false);
     // Store the company name in localStorage to be used by the chat page
-    localStorage.setItem('currentChatTitle', companyName); //it's upto me how to use this currentChatTitle from localStorage.
-    router.push('/');
+    localStorage.setItem('currentChatTitle', companyName);
+    
+    // Generate a new UUID for the chat
+    const chatId = generateUUID();
+    
+    // Navigate to the specific chat URL instead of root
+    router.push(`/chat/${chatId}`);
     router.refresh();
   };
 
