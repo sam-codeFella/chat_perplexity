@@ -99,9 +99,7 @@ export async function POST(request: Request) {
           for (const word of words) {
 
             dataStream.writeData({
-              "id": assistantMessage.id,
-              "createdAt":assistantMessage.created_at,
-              "role": "assistant",
+              type: 'text-delta',
                 content: word + " " });
             await new Promise(res => setTimeout(res, 50)); // Simulate delay
 
