@@ -102,7 +102,8 @@ export async function POST(request: Request) {
       "Dubai ", "is ", "a ", "city ", "of ", "contrasts, ", "combining ", "tradition ", "with ", "innovation, ", "making ", "it ", "a ", "unique ", "destination ", "for ", "visitors."
     ];
 
-    /*return createDataStreamResponse({
+    /*
+    return createDataStreamResponse({
       status: 200,
       statusText: 'OK',
       headers: {
@@ -133,7 +134,7 @@ export async function POST(request: Request) {
         // Stream each token as a separate message
         for (const token of assistantMessage.content) {
           dataStream.write(`0:${JSON.stringify(token)}\n`);
-          // Optional: await new Promise(res => setTimeout(res, 10)); // For streaming effect
+          await new Promise(res => setTimeout(res, 10)); // For streaming effect
         }
 
         // Send the finish reason and usage
