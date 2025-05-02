@@ -61,7 +61,7 @@ export function PureMessageActions({
             <Button
               data-testid="message-upvote"
               className="py-1 px-2 h-fit text-muted-foreground !pointer-events-auto"
-              disabled={vote?.type === 'up'}
+              disabled={vote?.isUpvoted}
               variant="outline"
               onClick={async () => {
                 const upvote = fetch('/api/vote', {
@@ -88,11 +88,9 @@ export function PureMessageActions({
                         return [
                           ...votesWithoutCurrent,
                           {
-                            id: crypto.randomUUID(),
                             chatId,
                             messageId: message.id,
-                            type: 'up',
-                            createdAt: new Date(),
+                            isUpvoted: true,
                           },
                         ];
                       },
@@ -117,7 +115,7 @@ export function PureMessageActions({
               data-testid="message-downvote"
               className="py-1 px-2 h-fit text-muted-foreground !pointer-events-auto"
               variant="outline"
-              disabled={vote?.type === 'down'}
+              disabled={vote && !vote.isUpvoted}
               onClick={async () => {
                 const downvote = fetch('/api/vote', {
                   method: 'PATCH',
@@ -143,11 +141,9 @@ export function PureMessageActions({
                         return [
                           ...votesWithoutCurrent,
                           {
-                            id: crypto.randomUUID(),
                             chatId,
                             messageId: message.id,
-                            type: 'down',
-                            createdAt: new Date(),
+                            isUpvoted: false,
                           },
                         ];
                       },

@@ -49,7 +49,7 @@ export const {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        //token.token = user.token; // Store token in JWT
+        token.token = user.token; // Store token in JWT
       }
       return token;
     },

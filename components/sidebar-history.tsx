@@ -254,7 +254,6 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
 
     return chats.reduce(
       (groups, chat) => {
-        if (!chat.createdAt) return groups;
         const chatDate = new Date(chat.createdAt);
 
         if (isToday(chatDate)) {
