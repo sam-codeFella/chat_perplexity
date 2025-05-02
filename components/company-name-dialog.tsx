@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { API_BASE_URL } from '@/lib/config';
 
 // Define company interface
 interface Company {
@@ -49,7 +50,7 @@ export function CompanyNameDialog({
   const fetchCompanies = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8000/companies');
+      const response = await fetch(`${API_BASE_URL}/companies`);
       if (!response.ok) {
         throw new Error('Failed to fetch companies');
       }

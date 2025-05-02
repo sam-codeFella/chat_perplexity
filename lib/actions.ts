@@ -3,6 +3,7 @@
 import { Vote } from './types';
 import { auth } from '@/app/(auth)/auth';
 import { Session } from 'next-auth';
+import { API_BASE_URL } from './config';
 
 interface ExtendedSession extends Session {
   user: {
@@ -19,7 +20,7 @@ export async function voteMessage({ chatId, messageId, type }: Vote) {
     }
 
     // Use the direct API endpoint instead of the Next.js API route
-    const response = await fetch(`http://localhost:8000/chats/${chatId}/messages/${messageId}/vote`, {
+    const response = await fetch(`${API_BASE_URL}/chats/${chatId}/messages/${messageId}/vote`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -50,7 +51,7 @@ export async function fetchCitations(params: {
       throw new Error('Unauthorized');
     }
     
-    const response = await fetch('http://localhost:8000/chats/citations', {
+    const response = await fetch(`${API_BASE_URL}/chats/citations`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -19,6 +19,7 @@ import {
 import { ArtifactKind } from '@/components/artifact';
 import { chat as chats, message as messages, vote as votes } from './schema';
 import { generateUUID } from '../utils';
+import { API_BASE_URL } from '../config';
 
 // Optionally, if not using email/pass login, you can
 // use the Drizzle adapter for Auth.js / NextAuth
@@ -32,7 +33,7 @@ const drizzleDb = drizzle(client);
 export async function getUser(email: string): Promise<Array<User>> {
   try {
     const encodedEmail = encodeURIComponent(email);
-    const response = await fetch(`http://localhost:8000/auth/user?email=${encodedEmail}`);
+    const response = await fetch(`${API_BASE_URL}/auth/user?email=${encodedEmail}`);
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -94,7 +95,7 @@ export async function deleteChatById({ id }: { id: string }) {
 
 export async function getChatsByUserId({ id, token }: { id: string; token: string }) {
   try {
-    const response = await fetch('http://localhost:8000/chats', {
+    const response = await fetch(`${API_BASE_URL}/chats`, {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
@@ -115,7 +116,7 @@ export async function getChatsByUserId({ id, token }: { id: string; token: strin
 
 export async function getChatById({ id, token }: { id: string; token: string }) {
   try {
-    const response = await fetch(`http://localhost:8000/chats/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/chats/${id}`, {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
@@ -169,7 +170,7 @@ export async function voteMessage({
   token: string;
 }) {
   try {
-    const response = await fetch(`http://localhost:8000/chats/${chatId}/messages/${messageId}/vote`, {
+    const response = await fetch(`${API_BASE_URL}/chats/${chatId}/messages/${messageId}/vote`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -192,7 +193,7 @@ export async function voteMessage({
 
 export async function getVotesByChatId({ id, token }: { id: string; token: string }) {
   try {
-    const response = await fetch(`http://localhost:8000/chats/${id}/votes`, {
+    const response = await fetch(`${API_BASE_URL}/chats/${id}/votes`, {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`

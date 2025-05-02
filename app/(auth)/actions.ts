@@ -1,6 +1,7 @@
 'use server';
 
 import { z } from 'zod';
+import { API_BASE_URL } from '@/lib/config';
 
 import { signIn } from './auth';
 
@@ -23,7 +24,7 @@ export const login = async (
       password: formData.get('password'),
     });
 
-    const response = await fetch('http://localhost:8000/auth/login', {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -80,7 +81,7 @@ export const register = async (
       password: formData.get('password'),
     });
 
-    const response = await fetch('http://localhost:8000/auth/register', {
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -23,6 +23,7 @@ import { isProductionEnvironment } from '@/lib/constants';
 import { NextResponse } from 'next/server';
 import { myProvider } from '@/lib/ai/providers';
 import { Session } from 'next-auth';
+import { API_BASE_URL } from '@/lib/config';
 
 interface ExtendedSession extends Session {
   user: {
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
     }
 
     // Call the external chat API
-    const response = await fetch('http://localhost:8000/chats', {
+    const response = await fetch(`${API_BASE_URL}/chats`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
