@@ -129,8 +129,19 @@ export async function POST(request: Request) {
     return createDataStreamResponse({
       execute: async (dataStream) => {
         // Send initial messageId
-        dataStream.write(`f:${JSON.stringify({ messageId: "msg-Tsevbd35brzfTXH1RCsiKfQA" })}\n`);
-
+        dataStream.write(`f:${JSON.stringify({ messageId: assistantMessage.id })}\n`);
+        // dataStream.writeMessageAnnotation(`f:${JSON.stringify({ citation: [{"title": "sjdha", "url":"sjdask"}] })}\n`);
+        // this also works below.
+        // the below one works.
+        dataStream.writeMessageAnnotation(`f:${JSON.stringify({
+          citations: [
+            {
+              title: "Source Document",
+              url: assistantMessage.metadata_fields[0].file_path,
+              page_number: assistantMessage.metadata_fields[0].page_number,
+            }
+          ]
+        })}\n`);
         // Stream each token as a separate message
         for (const token of assistantMessage.content) {
           dataStream.write(`0:${JSON.stringify(token)}\n`);

@@ -23,10 +23,28 @@ import { ExternalLinkIcon } from './icons';
 import ReactMarkdown from 'react-markdown';
 import type { WebSearchResult, Citation } from '@/lib/types';
 import { ComponentProps } from 'react';
-import { voteMessage } from '@/lib/actions';
+import { voteMessage, fetchCitations } from '@/lib/actions';
 import { ThumbUpIcon, ThumbDownIcon } from './icons';
 import PdfViewer from './PdfViewer';
 import { usePdfDisplay } from '@/hooks/use-pdf-display';
+
+// Define the structure for our annotations
+type Annotation = {
+  type: 'page_number';
+  value: number;
+} | {
+  type: string;
+  value: any;
+};
+
+// Helper type for citations
+type CitationAnnotation = {
+  citations: Array<{
+    title: string;
+    url: string;
+    page_number: number;
+  }>;
+};
 
 const PurePreviewMessage = ({
   chatId,
@@ -49,11 +67,64 @@ const PurePreviewMessage = ({
   ) => Promise<string | null | undefined>;
   isReadonly: boolean;
 }) => {
+  // Helper function to parse f: prefixed JSON annotations
+  const parseFAnnotation = (annotation: string): any | undefined => {
+    if (annotation.startsWith('f:')) {
+      try {
+        return JSON.parse(annotation.slice(2)); // Remove 'f:' prefix and parse
+      } catch (e) {
+        console.error('Failed to parse f: annotation:', e);
+        return undefined;
+      }
+    }
+    return undefined;
+  };
+
+  // Helper function to get annotation value
+  const getAnnotation = (type: string) => {
+    if (!message.annotations) return undefined;
+    
+    // First try to find a direct type match
+    const annotation = message.annotations.find(a => 
+      typeof a === 'object' && a !== null && 'type' in a && a.type === type
+    ) as Annotation | undefined;
+    
+    if (annotation) return annotation.value;
+
+    // If no direct match and annotations are strings, try parsing f: format
+    const stringAnnotations = message.annotations.filter((a): a is string => typeof a === 'string');
+    for (const ann of stringAnnotations) {
+      const parsed = parseFAnnotation(ann);
+      if (parsed && type in parsed) {
+        return parsed[type];
+      }
+    }
+
+    return undefined;
+  };
+
+  // Get citations from f: annotations
+  const getCitations = (): CitationAnnotation['citations'] | undefined => {
+    if (!message.annotations) return undefined;
+    
+    const stringAnnotations = message.annotations.filter((a): a is string => typeof a === 'string');
+    for (const ann of stringAnnotations) {
+      const parsed = parseFAnnotation(ann);
+      if (parsed && 'citations' in parsed) {
+        return parsed.citations;
+      }
+    }
+    return undefined;
+  };
+
   console.log('[PurePreviewMessage] Initializing with props:', {
     chatId,
     messageId: message.id,
     messageRole: message.role,
     messageContent: message.content?.substring(0, 50),
+    annotations: message.annotations || [],
+    page_number: getAnnotation('page_number'),
+    citations: getCitations(),
     vote,
     isLoading,
     isReadonly
@@ -84,21 +155,29 @@ const PurePreviewMessage = ({
   const handleCheckSources = async () => {
     console.log('[PurePreviewMessage] handleCheckSources clicked');
     try {
-      console.log('[PurePreviewMessage] Fetching PDF from endpoint');
-      const response = await fetch('http://localhost:5001/fetch-highlighted-pdf');
-      console.log('[PurePreviewMessage] PDF fetch response status:', response.status);
-      if (response.ok) {
-        // Create a blob URL from the PDF response
-        const blob = await response.blob();
-        console.log('[PurePreviewMessage] Created PDF blob:', { size: blob.size });
-        const pdfUrl = URL.createObjectURL(blob);
-        console.log('[PurePreviewMessage] Created PDF URL:', pdfUrl);
-        showPdf(pdfUrl);
-      } else {
-        console.error('Failed to fetch PDF:', response.statusText);
+      // Get citations from annotations
+      const citations = getCitations();
+      if (!citations || citations.length === 0) {
+        console.error('No citations found in annotations');
+        return;
       }
+
+      const firstCitation = citations[0];
+      console.log('[PurePreviewMessage] Using citation:', firstCitation);
+
+      console.log('[PurePreviewMessage] Fetching PDF from citations endpoint');
+      const blob = await fetchCitations({
+        file_path: firstCitation.url,
+        page_number: firstCitation.page_number,
+        chunk_id: "25ddfc6f-98c8-4ea6-aad6-bd5dd293ad8d" // Note: You might want to make this dynamic if needed
+      });
+      
+      console.log('[PurePreviewMessage] Created PDF blob:', { size: blob.size });
+      const pdfUrl = URL.createObjectURL(blob);
+      console.log('[PurePreviewMessage] Created PDF URL:', pdfUrl);
+      showPdf(pdfUrl);
     } catch (error) {
-      console.error('Error fetching PDF:', error);
+      console.error('Error fetching citations:', error);
     }
   };
 

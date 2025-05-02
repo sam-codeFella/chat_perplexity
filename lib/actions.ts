@@ -37,4 +37,36 @@ export async function voteMessage({ chatId, messageId, type }: Vote) {
     console.error('Error voting:', error);
     throw error;
   }
+}
+
+export async function fetchCitations(params: {
+  file_path: string;
+  page_number: number;
+  chunk_id: string;
+}): Promise<Blob> {
+  try {
+    const session = (await auth()) as ExtendedSession | null;
+    if (!session?.user?.id || !session.user.token) {
+      throw new Error('Unauthorized');
+    }
+    
+    const response = await fetch('http://localhost:8000/chats/citations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.user.token}`
+        // The session token will be automatically handled by the server middleware
+      },
+      body: JSON.stringify(params)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch citations: ${response.statusText}`);
+    }
+
+    return await response.blob();
+  } catch (error) {
+    console.error('Error fetching citations:', error);
+    throw error;
+  }
 } 
