@@ -31,7 +31,6 @@ yarn-error.log*
 # turbo
 .turbo
 
-.env
 .vercel
 .vscode
 
