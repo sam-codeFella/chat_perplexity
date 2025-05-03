@@ -1,5 +1,5 @@
 import { compare } from 'bcrypt-ts';
-import NextAuth, { type User, type Session } from 'next-auth';
+import NextAuth, { type User as NextAuthUser, type Session } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 
 import { getUser } from '@/lib/db/queries';
@@ -10,6 +10,11 @@ interface ExtendedSession extends Session {
   user: User & {
     token?: string;
   };
+}
+
+// Extend the base User type to include token
+interface User extends NextAuthUser {
+  token?: string;
 }
 
 //okay this is well understood now.
@@ -41,7 +46,7 @@ export const {
         if (users.length === 0) return null;
         const passwordsMatch = await compare(password, users[0].password!);
         if (!passwordsMatch) return null;
-        return { ...users[0], token } as any; // Include token in user object
+        return { ...users[0], token } as User; // Cast to our custom User type
       },
     }),
   ],
@@ -49,7 +54,7 @@ export const {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.token = user.token; // Store token in JWT
+        token.token = (user as User).token; // Use type assertion here
       }
       return token;
     },
