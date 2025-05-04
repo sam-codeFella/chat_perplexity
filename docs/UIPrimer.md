@@ -76,10 +76,10 @@ This well-structured layout provides a solid foundation for a modern Next.js app
 This document explains how session management works in your NextAuth.js setup.
 
 ---
-
 ## 1. Session Storage and Maintenance
 
 - **NextAuth.js** uses **JWT (JSON Web Tokens)** for session management by default.
+- I need to udnerstand this once again.
 - After a successful sign-in:
   - The **JWT** is stored as an **HTTP-only cookie** named `next-auth.session-token`.
   - This cookie is automatically sent with every request to your application.

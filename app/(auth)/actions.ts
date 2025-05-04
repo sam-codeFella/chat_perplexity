@@ -18,11 +18,13 @@ export const login = async (
   _: LoginActionState,
   formData: FormData,
 ): Promise<LoginActionState> => {
+  console.log('[Auth Actions] Login attempt started');
   try {
     const validatedData = authFormSchema.parse({
       email: formData.get('email'),
       password: formData.get('password'),
     });
+    console.log('[Auth Actions] Validation successful for email:', validatedData.email);
 
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
@@ -36,23 +38,36 @@ export const login = async (
     });
 
     const data = await response.json();
+    console.log('[Auth Actions] Login API response status:', response.status);
+    console.log('[Auth Actions] Token received:', !!data.token);
 
     if (!response.ok) {
+      console.log('[Auth Actions] Login API failed with status:', response.status);
       return { status: 'failed' };
     }
 
     // If login API call is successful, proceed with signIn
-    await signIn('credentials', {
-      email: validatedData.email,
-      username: validatedData.email.split('@')[0],
-      password: validatedData.password,
-      token: data.token,
-      redirect: false,
-    });
+    console.log('[Auth Actions] Proceeding with NextAuth signIn');
+    try {
+      const signInResult = await signIn('credentials', {
+        email: validatedData.email,
+        username: validatedData.email.split('@')[0],
+        password: validatedData.password,
+        token: data.token,
+        redirect: false,
+      });
+      console.log('[Auth Actions] NextAuth signIn result:', signInResult);
+    } catch (signInError) {
+      console.error('[Auth Actions] NextAuth signIn error:', signInError);
+      return { status: 'failed' };
+    }
 
+    console.log('[Auth Actions] Login successful');
     return { status: 'success' };
   } catch (error) {
+    console.error('[Auth Actions] Login error:', error);
     if (error instanceof z.ZodError) {
+      console.log('[Auth Actions] Validation error');
       return { status: 'invalid_data' };
     }
     return { status: 'failed' };
